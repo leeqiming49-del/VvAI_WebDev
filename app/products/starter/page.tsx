@@ -2,7 +2,21 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, Plus, Sparkles, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  Brain,
+  ChevronDown,
+  CircleDollarSign,
+  ListTree,
+  Plus,
+  ReceiptText,
+  Sparkles,
+  Target,
+  Trash2,
+  TrendingUp,
+  WalletCards,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,25 +72,25 @@ function variancePercent(actual: number, budget: number) {
 
 function statusFor(value: number, type: "profit" | "cost" | "expense" | "margin") {
   if (type === "margin") {
-    if (value >= 20) return "Healthy";
-    if (value >= 10) return "Needs Attention";
-    return "Warning";
+    if (value >= 25) return "Strong";
+    if (value >= 10) return "Healthy";
+    return "Needs Attention";
   }
   if (type === "profit") {
     if (value > 0) return "Healthy";
-    return "Warning";
+    return "Needs Attention";
   }
   if (type === "cost" || type === "expense") {
-    if (value <= 35) return "Healthy";
-    if (value <= 60) return "Needs Attention";
-    return "Warning";
+    if (value <= 35) return "Low";
+    if (value <= 60) return "High";
+    return "Needs Attention";
   }
   return "Needs Attention";
 }
 
 function statusClass(status: string) {
-  if (status === "Healthy") return "border-cyan/20 bg-cyan/10 text-cyan";
-  if (status === "Needs Attention") return "border-amber-300/20 bg-amber-300/10 text-amber-200";
+  if (status === "Strong" || status === "Healthy" || status === "Low") return "border-emerald-300/20 bg-emerald-300/10 text-emerald-300";
+  if (status === "High") return "border-amber-300/20 bg-amber-300/10 text-amber-200";
   return "border-rose-300/20 bg-rose-400/10 text-rose-200";
 }
 
@@ -234,6 +248,7 @@ export default function StarterDashboardPage() {
   const [calculated, setCalculated] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [showAllInsights, setShowAllInsights] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [validationError, setValidationError] = useState("");
   const [validationWarning, setValidationWarning] = useState<ValidationWarning>(null);
   const [businessType, setBusinessType] = useState("");
@@ -329,7 +344,7 @@ export default function StarterDashboardPage() {
 
       const totalPercentage = categories.reduce((sum, category) => sum + toNumber(category.cost), 0);
       if (totalPercentage > 100) {
-        setValidationWarning({ message: "Total cost percentage exceeds 100%. Please review your inputs before continuing." });
+        setValidationWarning({ message: "Total percentage exceeds 100%." });
         setCalculated(false);
         return;
       }
@@ -342,17 +357,20 @@ export default function StarterDashboardPage() {
     setValidationError("");
     setValidationWarning(null);
     setCalculated(true);
-    setInsights([]);
+    setInsights(buildInsights(categories, expenses, costMode));
     setShowAllInsights(false);
+    setShowDetails(false);
     setFeedbackSaved(false);
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
   }
 
   const kpis = [
-    ["Revenue", totals.revenue, "Healthy"],
-    ["COGS / Cost", totals.cogs, statusFor(totals.revenue > 0 ? (totals.cogs / totals.revenue) * 100 : 0, "cost")],
-    ["Gross Profit", totals.grossProfit, statusFor(totals.grossProfit, "profit")],
-    ["Operating Expenses", totals.operatingExpenses, statusFor(totals.revenue > 0 ? (totals.operatingExpenses / totals.revenue) * 100 : 0, "expense")],
-    ["Net Profit", totals.netProfit, statusFor(totals.netProfit, "profit")],
+    ["Revenue", totals.revenue, totals.revenue > 0 ? "Healthy" : "Needs Attention", CircleDollarSign],
+    ["Gross Profit", totals.grossProfit, statusFor(totals.grossProfit, "profit"), TrendingUp],
+    ["Net Profit", totals.netProfit, statusFor(totals.netProfit, "profit"), BarChart3],
+    ["Profit Margin", totals.profitMargin, statusFor(totals.profitMargin, "margin"), Sparkles],
+    ["COGS / Cost", totals.cogs, statusFor(totals.revenue > 0 ? (totals.cogs / totals.revenue) * 100 : 0, "cost"), WalletCards],
+    ["Operating Expenses", totals.operatingExpenses, statusFor(totals.revenue > 0 ? (totals.operatingExpenses / totals.revenue) * 100 : 0, "expense"), ReceiptText],
   ] as const;
 
   const budgetComparisons = [
@@ -364,198 +382,240 @@ export default function StarterDashboardPage() {
   const visibleInsights = showAllInsights ? insights : insights.slice(0, 2);
 
   return <VvaiProductShell>
-    <section className="bg-[#030303] px-5 py-12 text-white lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <Link href="/products/neural-command" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-white"><ArrowLeft size={15} /> Back to P&L Automation System</Link>
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_390px]">
-          <div>
-            <p className="text-xs font-bold tracking-[.2em] text-cyan">BUSINESS HEALTH DASHBOARD</p>
-            <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">P&L Automation System</h1>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">Create category-level revenue and cost inputs, calculate gross profit and net profit, then generate rule-based insights from the actual business mix.</p>
-            <Card className="mt-8 border-cyan/15 bg-cyan/[.045] p-5 text-sm leading-6 text-slate-400">Free Version 1 access. Unlimited usage. No login, database, checkout, or payment flow required.</Card>
-
-            <Card className="mt-6 p-5 md:p-6">
-              <form className="grid gap-5" onSubmit={(event) => { event.preventDefault(); handleAnalyze(); }}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <DarkSelect
-                    label="Revenue period"
-                    value={period}
-                    onChange={setPeriod}
-                    options={[
-                      { label: "Monthly Revenue", value: "Monthly Revenue" },
-                      { label: "Yearly Revenue", value: "Yearly Revenue" },
-                      { label: "Total Revenue", value: "Total Revenue" },
-                    ]}
-                  />
-                  <DarkSelect
-                    label="Cost input mode"
-                    value={costMode}
-                    onChange={(value) => setCostMode(value as CostMode)}
-                    options={[
-                      { label: "RM", value: "rm" },
-                      { label: "Percentage (%)", value: "percent" },
-                    ]}
-                  />
-                </div>
-
-                <Card className="p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h2 className="font-semibold text-white">Sales & Cost Breakdown</h2>
-                      <p className="mt-1 text-xs text-slate-500">Add each business category with its sales revenue and direct cost.</p>
-                    </div>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setCategories((items) => [...items, { id: `category-${Date.now()}`, name: "New Category", revenue: "", cost: "" }])}><Plus size={14} /> Add Category</Button>
-                  </div>
-                  <div className="mt-4 grid gap-3">
-                    <div className="hidden grid-cols-[1fr_150px_150px_36px] gap-2 px-1 text-[11px] font-bold uppercase tracking-[.14em] text-slate-500 md:grid">
-                      <span>Category</span>
-                      <span>Sales / Revenue</span>
-                      <span>Cost</span>
-                      <span>Action</span>
-                    </div>
-                    {categories.map((category) => <div key={category.id} className="grid gap-2 md:grid-cols-[1fr_150px_150px_36px]">
-                      <label className="grid gap-1 md:block"><span className="text-xs font-semibold text-slate-500 md:hidden">Category</span><Input value={category.name} onChange={(event) => updateCategory(category.id, "name", event.target.value)} placeholder="Category name" /></label>
-                      <label className="grid gap-1 md:block"><span className="text-xs font-semibold text-slate-500 md:hidden">Sales / Revenue</span><Input className={numberInputClass} type="number" step="0.01" value={category.revenue} onChange={(event) => updateCategory(category.id, "revenue", event.target.value)} placeholder="Sales / Revenue" /></label>
-                      <label className="grid gap-1 md:block"><span className="text-xs font-semibold text-slate-500 md:hidden">Cost</span><Input className={numberInputClass} type="number" step="0.01" value={category.cost} onChange={(event) => updateCategory(category.id, "cost", event.target.value)} placeholder={costMode === "rm" ? "Cost RM" : "Cost %"} /></label>
-                      <button type="button" aria-label="Delete category" onClick={() => setCategories((items) => items.filter((item) => item.id !== category.id))} className="grid h-12 place-items-center rounded-lg border border-white/[.10] bg-black/25 text-slate-400 transition hover:border-rose-400/40 hover:text-rose-300"><Trash2 size={16} /></button>
-                    </div>)}
-                  </div>
-                  {validationError && <p className="mt-4 rounded-lg border border-rose-400/25 bg-rose-500/10 p-3 text-sm leading-6 text-rose-200">{validationError}</p>}
-                  {validationWarning && <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100">
-                    <p>{validationWarning.message}</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Button type="button" size="sm" onClick={continueAnalysis}>Continue Anyway</Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => setValidationWarning(null)}>Edit Inputs</Button>
-                    </div>
-                  </div>}
-                </Card>
-
-                <Card className="p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="font-semibold text-white">Operating Expenses</h2>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setExpenses((items) => [...items, { id: `expense-${Date.now()}`, name: "New Expense", amount: "" }])}><Plus size={14} /> Add Expense</Button>
-                  </div>
-                  <div className="mt-4 grid gap-3">
-                    {expenses.map((expense) => <div key={expense.id} className="grid gap-2 md:grid-cols-[1fr_160px_36px]">
-                      <Input value={expense.name} onChange={(event) => updateExpense(expense.id, "name", event.target.value)} placeholder="Expense name" />
-                      <Input className={numberInputClass} type="number" min="0" step="0.01" value={expense.amount} onChange={(event) => updateExpense(expense.id, "amount", event.target.value)} placeholder="Amount RM" />
-                      <button type="button" aria-label="Delete expense" onClick={() => setExpenses((items) => items.filter((item) => item.id !== expense.id))} className="grid h-12 place-items-center rounded-lg border border-white/[.10] bg-black/25 text-slate-400 transition hover:border-rose-400/40 hover:text-rose-300"><Trash2 size={16} /></button>
-                    </div>)}
-                  </div>
-                </Card>
-
-                <Card className="p-4">
-                  <label className="flex items-center gap-3 text-sm font-semibold text-slate-300">
-                    <input type="checkbox" checked={budgetEnabled} onChange={(event) => setBudgetEnabled(event.target.checked)} />
-                    Enable Budget Comparison
-                  </label>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">Targets are used for variance comparison. Leave empty if you do not track budgets.</p>
-                  {budgetEnabled && <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <label className="grid gap-2 text-sm font-semibold text-slate-300">Revenue Target <span className="font-normal text-slate-500">(Optional)</span><Input className={numberInputClass} type="number" min="0" step="0.01" value={budgetRevenue} onChange={(event) => setBudgetRevenue(event.target.value)} placeholder="Revenue Target" /></label>
-                    <label className="grid gap-2 text-sm font-semibold text-slate-300">Cost Target <span className="font-normal text-slate-500">(Optional)</span><Input className={numberInputClass} type="number" min="0" step="0.01" value={budgetCost} onChange={(event) => setBudgetCost(event.target.value)} placeholder="Cost Target" /></label>
-                    <label className="grid gap-2 text-sm font-semibold text-slate-300 md:col-span-2">Expense Target <span className="font-normal text-slate-500">(Optional)</span><Input className={numberInputClass} type="number" min="0" step="0.01" value={budgetOperatingExpenses} onChange={(event) => setBudgetOperatingExpenses(event.target.value)} placeholder="Expense Target" /></label>
-                  </div>}
-                </Card>
-
-                <Button className="w-full md:w-fit">Analyze Business</Button>
-              </form>
-            </Card>
-          </div>
-
-          <div className="space-y-5">
-            <Card className="p-5">
-              <p className="text-xs font-bold tracking-[.18em] text-cyan">ANALYSIS OUTPUT</p>
-              {calculated ? <div className="mt-5 space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {kpis.map(([label, value, status]) => <div key={label} className="rounded-xl border border-white/[.08] bg-black/25 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-[.12em] text-slate-500">{label}</p>
-                      <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${statusClass(status)}`}>{status}</span>
-                    </div>
-                    <p className="mt-3 text-xl font-semibold text-white">{formatCurrency(value)}</p>
-                  </div>)}
-                  <div className="rounded-xl border border-cyan/15 bg-cyan/[.06] p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-[.12em] text-slate-500">Profit Margin</p>
-                      <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${statusClass(statusFor(totals.profitMargin, "margin"))}`}>{statusFor(totals.profitMargin, "margin")}</span>
-                    </div>
-                    <p className="mt-3 text-2xl font-semibold text-cyan">{pct(totals.profitMargin)}</p>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-white/[.08] bg-black/25 p-4">
-                  <p className="text-xs font-bold tracking-[.18em] text-cyan">BREAKDOWN SUMMARY</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-lg border border-white/[.08] bg-black/25 p-3"><p className="text-xs text-slate-500">Top Revenue Category</p><p className="mt-2 font-semibold text-white">{breakdown.topRevenue ? `${breakdown.topRevenue.name} (${formatCurrency(breakdown.topRevenue.revenueValue)})` : "Not enough data"}</p></div>
-                    <div className="rounded-lg border border-white/[.08] bg-black/25 p-3"><p className="text-xs text-slate-500">Highest Margin Category</p><p className="mt-2 font-semibold text-white">{breakdown.highestMargin ? `${breakdown.highestMargin.name} (${pct(breakdown.highestMargin.margin)})` : "Not enough data"}</p></div>
-                    <div className="rounded-lg border border-white/[.08] bg-black/25 p-3"><p className="text-xs text-slate-500">Largest Cost Category</p><p className="mt-2 font-semibold text-white">{breakdown.largestCost ? `${breakdown.largestCost.name} (${formatCurrency(breakdown.largestCost.costValue)})` : "Not enough data"}</p></div>
-                    <div className="rounded-lg border border-white/[.08] bg-black/25 p-3"><p className="text-xs text-slate-500">Largest Operating Expense</p><p className="mt-2 font-semibold text-white">{breakdown.largestExpense ? `${breakdown.largestExpense.name} (${formatCurrency(toNumber(breakdown.largestExpense.amount))})` : "Not enough data"}</p></div>
-                  </div>
-                </div>
-                {budgetEnabled && <div className="rounded-lg border border-white/[.08] bg-black/25 p-3 text-sm leading-6 text-slate-400">
-                  <p className="text-xs font-bold tracking-[.18em] text-cyan">BUDGET COMPARISON</p>
-                  <div className="mt-3 grid gap-3">
-                    {budgetComparisons.map(([label, actual, budget]) => {
-                      const variance = actual - budget;
-                      return <div key={label} className="rounded-lg border border-white/[.08] bg-black/25 p-3">
-                        <p className="font-semibold text-white">{label}</p>
-                        <p className="mt-2">Actual: {formatCurrency(actual)}</p>
-                        <p>Target: {formatCurrency(budget)}</p>
-                        <p>Variance: {formatCurrency(variance)} ({variancePercent(actual, budget)})</p>
-                      </div>;
-                    })}
-                  </div>
-                </div>}
-              </div> : <p className="mt-4 text-sm leading-6 text-slate-500">Add category revenue, category cost, and operating expenses to generate analysis.</p>}
-            </Card>
-
-            <Card className="p-5">
-              <p className="text-xs font-bold tracking-[.18em] text-cyan">AI INSIGHT</p>
-              <Button className="mt-4 w-full" variant="outline" disabled={!calculated} onClick={() => { setInsights(buildInsights(categories, expenses, costMode)); setShowAllInsights(false); }}><Sparkles size={15} /> Generate AI Insight</Button>
-              {!calculated && <p className="mt-3 text-xs leading-5 text-slate-500">Analyze the business first.</p>}
-              <div className="mt-4 grid gap-3">{visibleInsights.map((insight) => <div key={insight.title} className="rounded-lg border border-white/[.08] bg-black/25 p-4 text-sm leading-6 text-slate-400">
-                <p className="font-semibold text-white">{insight.title}</p>
-                <p className="mt-2">{insight.detail}</p>
-                <p className="mt-2 text-cyan">{insight.action}</p>
-              </div>)}</div>
-              {insights.length > 2 && <Button className="mt-4 w-full" variant="ghost" onClick={() => setShowAllInsights((value) => !value)}>{showAllInsights ? "Hide Extra Insights" : "Show More Insights"}</Button>}
-            </Card>
-
-            {calculated && <Card className="p-5">
-              <p className="text-sm font-semibold text-white">Was this useful?</p>
-              <div className="mt-4 grid gap-4">
-                <label className="grid gap-2 text-sm font-semibold text-slate-300">
-                  Business Type <span className="font-normal text-slate-500">Optional</span>
-                  <Input value={businessType} onChange={(event) => setBusinessType(event.target.value)} placeholder="Restaurant, retail, e-commerce..." />
-                </label>
-                <fieldset className="grid gap-3">
-                  <legend className="text-sm font-semibold text-slate-300">Rating <span className="text-cyan">*</span></legend>
-                  <div className="grid grid-cols-5 gap-2">
-                    {["1", "2", "3", "4", "5"].map((value) => <label key={value} className="rounded-lg border border-white/[.08] bg-black/20 px-3 py-3 text-center text-sm text-slate-400">
-                      <input required className="mr-2" type="radio" name="dashboard-rating" value={value} checked={rating === value} onChange={() => setRating(value)} />
-                      {value}
-                    </label>)}
-                  </div>
-                </fieldset>
-                <fieldset className="grid gap-3">
-                  <legend className="text-sm font-semibold text-slate-300">Would you use this again? <span className="text-cyan">*</span></legend>
-                  <div className="grid grid-cols-3 gap-2">
-                    {["Yes", "Maybe", "No"].map((value) => <label key={value} className="rounded-lg border border-white/[.08] bg-black/20 px-4 py-3 text-sm text-slate-400">
-                      <input required className="mr-2" type="radio" name="dashboard-would-use-again" value={value} checked={wouldUseAgain === value} onChange={() => setWouldUseAgain(value)} />
-                      {value}
-                    </label>)}
-                  </div>
-                </fieldset>
-                <label className="grid gap-2 text-sm font-semibold text-slate-300">
-                  Feedback <span className="font-normal text-slate-500">Optional</span>
-                  <Textarea value={feedback} onChange={(event) => { setFeedback(event.target.value); setFeedbackSaved(false); }} placeholder="What should VvAI improve or explain better?" />
-                </label>
-              </div>
-              <Button className="mt-4 w-full" variant="outline" disabled={feedbackSubmitting} onClick={() => void saveFeedback()}>{feedbackSubmitting ? "Saving..." : "Submit Feedback"}</Button>
-              {feedbackSaved && <p className="mt-3 text-sm font-semibold text-cyan">Thank you for the feedback. Your response has been recorded.</p>}
-              {feedbackError && <p className="mt-3 rounded-lg border border-rose-400/25 bg-rose-500/10 p-3 text-sm leading-6 text-rose-200">{feedbackError}</p>}
-            </Card>}
-          </div>
+    <section className={`min-h-screen bg-[#030303] px-4 py-6 text-white sm:px-5 md:py-10 lg:px-8 ${!calculated ? "pb-28 md:pb-12" : ""}`}>
+      <div className="mx-auto max-w-5xl">
+        <div className="flex items-center justify-between gap-4">
+          <Link href="/products/neural-command" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[.08] bg-black/30 text-slate-400 transition hover:border-cyan/30 hover:text-cyan" aria-label="Back to P&L Automation System"><ArrowLeft size={18} /></Link>
+          <p className="text-[10px] font-bold uppercase tracking-[.2em] text-slate-600">Powered by VvAI</p>
         </div>
+
+        <header className="mt-5 rounded-2xl border border-cyan/[.12] bg-[linear-gradient(145deg,rgba(77,244,255,.07),rgba(255,255,255,.018)_45%,rgba(156,124,255,.05))] p-4 shadow-[0_22px_70px_rgba(0,0,0,.35)] md:p-6">
+          <div className="flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-cyan/25 bg-cyan/10 text-cyan"><BarChart3 size={21} /></span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[.18em] text-cyan">Business performance</p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Business Health Dashboard</h1>
+              <p className="mt-1 text-xs leading-5 text-slate-400 sm:text-sm">AI-Assisted Business Performance Analysis</p>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <DarkSelect
+              label="Revenue period"
+              value={period}
+              onChange={setPeriod}
+              options={[
+                { label: "Monthly", value: "Monthly Revenue" },
+                { label: "Yearly", value: "Yearly Revenue" },
+                { label: "Total", value: "Total Revenue" },
+              ]}
+            />
+            <DarkSelect
+              label="Cost input mode"
+              value={costMode}
+              onChange={(value) => setCostMode(value as CostMode)}
+              options={[
+                { label: "RM", value: "rm" },
+                { label: "Percentage (%)", value: "percent" },
+              ]}
+            />
+          </div>
+        </header>
+
+        {!calculated ? <form className="mt-5 grid gap-4" onSubmit={(event) => { event.preventDefault(); handleAnalyze(); }}>
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.2em] text-cyan">Step 1</p>
+              <h2 className="mt-1 text-lg font-semibold">Business Inputs</h2>
+            </div>
+            <span className="text-xs text-slate-500">F&amp;B shown as example data</span>
+          </div>
+
+          <Card className="p-4 md:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2"><ListTree size={17} className="text-cyan" /><h3 className="font-semibold">Sales &amp; Cost Breakdown</h3></div>
+                <p className="mt-2 text-xs leading-5 text-slate-500">Add each business category with its revenue and direct cost.</p>
+              </div>
+              <Button type="button" size="sm" variant="ghost" className="shrink-0" onClick={() => setCategories((items) => [...items, { id: `category-${Date.now()}`, name: "New Category", revenue: "", cost: "" }])}><Plus size={14} /> Add</Button>
+            </div>
+            <div className="mt-4 grid gap-3">
+              {categories.map((category) => <div key={category.id} className="rounded-xl border border-white/[.08] bg-black/20 p-3 md:grid md:grid-cols-[1fr_150px_150px_40px] md:gap-2 md:p-2">
+                <div className="flex items-center gap-2">
+                  <label className="min-w-0 flex-1">
+                    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500 md:hidden">Category</span>
+                    <Input value={category.name} onChange={(event) => updateCategory(category.id, "name", event.target.value)} placeholder="Category name" />
+                  </label>
+                  <button type="button" aria-label="Delete category" onClick={() => setCategories((items) => items.filter((item) => item.id !== category.id))} className="mt-5 grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/[.08] text-slate-500 transition hover:border-rose-400/40 hover:text-rose-300 md:hidden"><Trash2 size={15} /></button>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 md:mt-0 md:contents">
+                  <label>
+                    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500 md:hidden">Sales / Revenue</span>
+                    <Input className={numberInputClass} type="number" step="0.01" value={category.revenue} onChange={(event) => updateCategory(category.id, "revenue", event.target.value)} placeholder="Revenue" />
+                  </label>
+                  <label>
+                    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500 md:hidden">Cost ({costMode === "rm" ? "RM" : "%"})</span>
+                    <Input className={numberInputClass} type="number" step="0.01" value={category.cost} onChange={(event) => updateCategory(category.id, "cost", event.target.value)} placeholder={costMode === "rm" ? "Cost RM" : "Cost %"} />
+                  </label>
+                </div>
+                <button type="button" aria-label="Delete category" onClick={() => setCategories((items) => items.filter((item) => item.id !== category.id))} className="hidden h-12 w-10 place-items-center rounded-lg border border-white/[.08] text-slate-500 transition hover:border-rose-400/40 hover:text-rose-300 md:grid"><Trash2 size={15} /></button>
+              </div>)}
+            </div>
+            {validationError && <p className="mt-4 rounded-lg border border-rose-400/25 bg-rose-500/10 p-3 text-sm leading-6 text-rose-200">{validationError}</p>}
+            {validationWarning && <div className="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100">
+              <p className="font-semibold">{validationWarning.message}</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button type="button" size="sm" onClick={continueAnalysis}>Continue Anyway</Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setValidationWarning(null)}>Edit Inputs</Button>
+              </div>
+            </div>}
+          </Card>
+
+          <Card className="p-4 md:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2"><ReceiptText size={17} className="text-cyan" /><h3 className="font-semibold">Operating Expenses</h3></div>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setExpenses((items) => [...items, { id: `expense-${Date.now()}`, name: "New Expense", amount: "" }])}><Plus size={14} /> Add</Button>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {expenses.map((expense) => <div key={expense.id} className="grid grid-cols-[1fr_110px_36px] gap-2 rounded-xl border border-white/[.08] bg-black/20 p-2 sm:grid-cols-[1fr_120px_36px]">
+                <Input className="h-11 px-3" value={expense.name} onChange={(event) => updateExpense(expense.id, "name", event.target.value)} placeholder="Expense name" />
+                <Input className={`${numberInputClass} h-11 px-3`} type="number" min="0" step="0.01" value={expense.amount} onChange={(event) => updateExpense(expense.id, "amount", event.target.value)} placeholder="RM" />
+                <button type="button" aria-label="Delete expense" onClick={() => setExpenses((items) => items.filter((item) => item.id !== expense.id))} className="grid h-11 place-items-center rounded-lg text-slate-500 transition hover:bg-rose-400/10 hover:text-rose-300"><Trash2 size={15} /></button>
+              </div>)}
+            </div>
+          </Card>
+
+          <Card className="overflow-visible p-4 md:p-5">
+            <button type="button" className="flex w-full items-center justify-between gap-3 text-left" onClick={() => setBudgetEnabled((value) => !value)}>
+              <span className="flex items-center gap-2"><Target size={17} className="text-violet" /><span className="font-semibold">Budget Comparison <span className="font-normal text-slate-500">(Optional)</span></span></span>
+              <ChevronDown size={17} className={`text-slate-500 transition ${budgetEnabled ? "rotate-180 text-cyan" : ""}`} />
+            </button>
+            {budgetEnabled && <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <label className="grid gap-2 text-xs font-semibold text-slate-400">Revenue Target<Input className={numberInputClass} type="number" min="0" step="0.01" value={budgetRevenue} onChange={(event) => setBudgetRevenue(event.target.value)} placeholder="RM" /></label>
+              <label className="grid gap-2 text-xs font-semibold text-slate-400">Cost Target<Input className={numberInputClass} type="number" min="0" step="0.01" value={budgetCost} onChange={(event) => setBudgetCost(event.target.value)} placeholder="RM" /></label>
+              <label className="grid gap-2 text-xs font-semibold text-slate-400">Expense Target<Input className={numberInputClass} type="number" min="0" step="0.01" value={budgetOperatingExpenses} onChange={(event) => setBudgetOperatingExpenses(event.target.value)} placeholder="RM" /></label>
+            </div>}
+          </Card>
+
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-cyan/[.12] bg-[#030303]/95 p-3 backdrop-blur-xl md:static md:border-0 md:bg-transparent md:p-0">
+            <div className="mx-auto max-w-5xl"><Button className="min-h-12 w-full md:w-auto"><Brain size={17} /> Analyze Business</Button></div>
+          </div>
+        </form> : <div className="mt-6 grid gap-5">
+          <div className="flex items-end justify-between gap-4 px-1">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.2em] text-cyan">{period.replace(" Revenue", "")} analysis results</p>
+              <h2 className="mt-1 text-2xl font-semibold">Business Performance</h2>
+            </div>
+            <p className="hidden text-sm text-slate-500 sm:block">Revenue: {formatCurrency(totals.revenue)}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            {kpis.map(([label, value, status, Icon]) => {
+              const isMargin = label === "Profit Margin";
+              return <div key={label} className="min-h-36 rounded-2xl border border-cyan/[.13] bg-[linear-gradient(145deg,rgba(77,244,255,.055),rgba(255,255,255,.018))] p-4 shadow-[0_16px_45px_rgba(0,0,0,.22)]">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">{label}</p>
+                  <Icon size={17} className="text-cyan" />
+                </div>
+                <p className={`mt-4 font-semibold tracking-tight ${isMargin ? "text-2xl text-cyan" : "text-xl text-white sm:text-2xl"}`}>{isMargin ? pct(value) : formatCurrency(value)}</p>
+                <span className={`mt-4 inline-flex rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${statusClass(status)}`}>{status}</span>
+              </div>;
+            })}
+          </div>
+
+          <Button variant="outline" className="w-full" onClick={() => setShowDetails((value) => !value)}>
+            {showDetails ? "Hide Detailed Breakdown" : "View Detailed Breakdown"}
+            <ChevronDown size={16} className={`transition ${showDetails ? "rotate-180" : ""}`} />
+          </Button>
+
+          {showDetails && <div className="grid gap-4">
+            <Card className="overflow-hidden">
+              <div className="flex items-center gap-2 border-b border-white/[.08] px-4 py-4"><BarChart3 size={17} className="text-cyan" /><h3 className="font-semibold">P&amp;L Statement</h3></div>
+              <div className="text-sm">
+                <div className="flex items-center justify-between gap-4 px-4 py-3 font-semibold"><span>Revenue</span><span>{formatCurrency(totals.revenue)}</span></div>
+                {categoryRows.map((row) => <div key={`revenue-${row.id}`} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-2 text-slate-400"><span className="pl-3">{row.name} revenue</span><span>{formatCurrency(row.revenueValue)}</span></div>)}
+                <div className="mt-2 border-t border-white/[.07] px-4 pt-2">
+                  {categoryRows.map((row) => <div key={`cost-${row.id}`} className="grid grid-cols-[1fr_auto] gap-3 py-2 text-slate-400"><span className="pl-3">{row.name} cost</span><span>{formatCurrency(row.costValue)}</span></div>)}
+                </div>
+                <div className="flex items-center justify-between gap-4 border-t border-white/[.08] px-4 py-3 font-semibold"><span>Total Cost</span><span>{formatCurrency(totals.cogs)}</span></div>
+                <div className="flex items-center justify-between gap-4 border-t border-white/[.08] px-4 py-3 font-semibold"><span>Gross Profit</span><span>{formatCurrency(totals.grossProfit)}</span></div>
+                <div className="px-4 pt-2">
+                  {expenses.map((expense) => <div key={expense.id} className="grid grid-cols-[1fr_auto] gap-3 py-2 text-slate-400"><span className="pl-3">{expense.name}</span><span>{formatCurrency(toNumber(expense.amount))}</span></div>)}
+                </div>
+                <div className="flex items-center justify-between gap-4 border-t border-white/[.08] px-4 py-3 font-semibold"><span>Operating Expenses</span><span>{formatCurrency(totals.operatingExpenses)}</span></div>
+                <div className="flex items-center justify-between gap-4 border-t border-cyan/15 bg-cyan/[.045] px-4 py-4 text-base font-semibold"><span>Net Profit</span><span className="text-cyan">{formatCurrency(totals.netProfit)}</span></div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-center gap-2"><ListTree size={17} className="text-cyan" /><h3 className="font-semibold">Category Summary</h3></div>
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  ["Top Revenue", breakdown.topRevenue ? `${breakdown.topRevenue.name} · ${formatCurrency(breakdown.topRevenue.revenueValue)}` : "Not enough data"],
+                  ["Highest Margin", breakdown.highestMargin ? `${breakdown.highestMargin.name} · ${pct(breakdown.highestMargin.margin)}` : "Not enough data"],
+                  ["Largest Cost", breakdown.largestCost ? `${breakdown.largestCost.name} · ${formatCurrency(breakdown.largestCost.costValue)}` : "Not enough data"],
+                  ["Largest Expense", breakdown.largestExpense ? `${breakdown.largestExpense.name} · ${formatCurrency(toNumber(breakdown.largestExpense.amount))}` : "Not enough data"],
+                ].map(([label, value]) => <div key={label} className="rounded-xl border border-white/[.07] bg-black/20 p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xs font-semibold leading-5 text-white">{value}</p></div>)}
+              </div>
+            </Card>
+
+            {budgetEnabled && <Card className="p-4">
+              <div className="flex items-center gap-2"><Target size={17} className="text-violet" /><h3 className="font-semibold">Budget &amp; Variance Analysis</h3></div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {budgetComparisons.map(([label, actual, budget]) => {
+                  const variance = actual - budget;
+                  return <div key={label} className="rounded-xl border border-white/[.08] bg-black/20 p-3 text-xs leading-5 text-slate-400">
+                    <p className="font-semibold text-white">{label}</p>
+                    <div className="mt-2 flex justify-between"><span>Actual</span><span>{formatCurrency(actual)}</span></div>
+                    <div className="flex justify-between"><span>Target</span><span>{formatCurrency(budget)}</span></div>
+                    <div className="mt-1 flex justify-between border-t border-white/[.06] pt-1 text-cyan"><span>Variance</span><span>{formatCurrency(variance)} · {variancePercent(actual, budget)}</span></div>
+                  </div>;
+                })}
+              </div>
+            </Card>}
+          </div>}
+
+          <Card className="p-4 md:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2"><Brain size={18} className="text-cyan" /><h3 className="font-semibold">AI Insights</h3></div>
+              <span className="text-[9px] font-bold uppercase tracking-[.14em] text-slate-600">{insights.length} business signals</span>
+            </div>
+            <div className="mt-4 grid gap-3">
+              {visibleInsights.map((insight, index) => <div key={insight.title} className="rounded-xl border border-cyan/[.12] bg-cyan/[.035] p-4 text-sm leading-6">
+                <div className="flex items-start justify-between gap-3"><p className="font-semibold text-white">{insight.title}</p><span className="rounded-full border border-cyan/15 bg-cyan/10 px-2 py-0.5 text-[9px] font-bold text-cyan">#{index + 1}</span></div>
+                <p className="mt-2 text-slate-400">{insight.detail}</p>
+                <p className="mt-3 border-l-2 border-cyan/40 pl-3 text-cyan">{insight.action}</p>
+              </div>)}
+            </div>
+            {insights.length > 2 && <Button className="mt-3 w-full" variant="ghost" onClick={() => setShowAllInsights((value) => !value)}>{showAllInsights ? "Hide Extra Insights" : "Show More Insights"}</Button>}
+          </Card>
+
+          <Card className="p-4 md:p-5">
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-cyan">Feedback</p>
+            <h3 className="mt-2 font-semibold">Was this useful?</h3>
+            <div className="mt-4 grid gap-4">
+              <label className="grid gap-2 text-xs font-semibold text-slate-400">Business Type <span className="font-normal text-slate-600">Optional</span><Input value={businessType} onChange={(event) => setBusinessType(event.target.value)} placeholder="Restaurant, retail, service business..." /></label>
+              <fieldset>
+                <legend className="text-xs font-semibold text-slate-400">Rating <span className="text-cyan">*</span></legend>
+                <div className="mt-2 grid grid-cols-5 gap-2">
+                  {["1", "2", "3", "4", "5"].map((value) => <label key={value} className={`grid min-h-11 place-items-center rounded-lg border text-sm font-semibold transition ${rating === value ? "border-cyan/40 bg-cyan/10 text-cyan" : "border-white/[.08] bg-black/20 text-slate-500"}`}><input className="sr-only" type="radio" name="dashboard-rating" value={value} checked={rating === value} onChange={() => setRating(value)} />{value}</label>)}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend className="text-xs font-semibold text-slate-400">Would you use this again? <span className="text-cyan">*</span></legend>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {["Yes", "Maybe", "No"].map((value) => <label key={value} className={`grid min-h-11 place-items-center rounded-lg border text-sm font-semibold transition ${wouldUseAgain === value ? "border-cyan/40 bg-cyan/10 text-cyan" : "border-white/[.08] bg-black/20 text-slate-500"}`}><input className="sr-only" type="radio" name="dashboard-would-use-again" value={value} checked={wouldUseAgain === value} onChange={() => setWouldUseAgain(value)} />{value}</label>)}
+                </div>
+              </fieldset>
+              <label className="grid gap-2 text-xs font-semibold text-slate-400">Feedback Notes <span className="font-normal text-slate-600">Optional</span><Textarea className="min-h-24" value={feedback} onChange={(event) => { setFeedback(event.target.value); setFeedbackSaved(false); }} placeholder="What should VvAI improve or explain better?" /></label>
+            </div>
+            <Button className="mt-4 w-full" variant="outline" disabled={feedbackSubmitting} onClick={() => void saveFeedback()}>{feedbackSubmitting ? "Saving..." : "Submit Feedback"}</Button>
+            {feedbackSaved && <p className="mt-3 text-sm font-semibold text-cyan">Thank you for the feedback. Your response has been recorded.</p>}
+            {feedbackError && <p className="mt-3 rounded-lg border border-rose-400/25 bg-rose-500/10 p-3 text-sm leading-6 text-rose-200">{feedbackError}</p>}
+          </Card>
+
+          <Button variant="outline" className="w-full" onClick={() => { setCalculated(false); window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" })); }}><ArrowLeft size={15} /> Edit Input Data</Button>
+          <p className="pb-4 text-center text-[10px] font-bold uppercase tracking-[.2em] text-slate-700">Powered by VvAI</p>
+        </div>}
       </div>
     </section>
   </VvaiProductShell>;
