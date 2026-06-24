@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="VvAI mark">
+  <rect width="512" height="512" rx="112" fill="#05070D"/>
+  <rect x="38" y="38" width="436" height="436" rx="94" stroke="#37E8FF" stroke-opacity="0.32" stroke-width="8"/>
+  <defs>
+    <linearGradient id="markBlue" x1="205" y1="0" x2="360" y2="0">
+      <stop offset="0%" stop-color="#37E8FF"/>
+      <stop offset="100%" stop-color="#5A5FFF"/>
+    </linearGradient>
+  </defs>
+  <text x="92" y="326" font-family="Inter, Arial, Helvetica, sans-serif" font-size="214" font-weight="900" letter-spacing="-14" fill="#F8FAFC">V</text>
+  <text x="242" y="328" font-family="Inter, Arial, Helvetica, sans-serif" font-size="194" font-weight="900" letter-spacing="-10" fill="url(#markBlue)">v</text>
+</svg>

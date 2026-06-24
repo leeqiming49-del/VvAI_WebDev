@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light dark; }
+* { border-color: rgba(255,255,255,.1); }
+html { scroll-behavior: smooth; }
+body {
+  min-height: 100vh;
+  background: #f5f5f5;
+  color: #222;
+  font-family: Arial, Helvetica, sans-serif;
+}
+::selection { background: rgba(77,244,255,.3); color: white; }
+
+.admin-panel {
+  color-scheme: dark;
+}
+
+.admin-panel.admin-light {
+  color-scheme: light;
+}
+
+.admin-panel.admin-dark .rounded-lg.border,
+.admin-panel.admin-dark .admin-table {
+  border-color: rgba(255,255,255,.1);
+}
+
+.admin-panel.admin-dark .bg-white,
+.admin-panel.admin-dark .bg-slate-100,
+.admin-panel.admin-dark .bg-slate-50 {
+  background-color: rgba(255,255,255,.035) !important;
+}
+
+.admin-panel.admin-dark .text-slate-800,
+.admin-panel.admin-dark .text-slate-700,
+.admin-panel.admin-dark .text-slate-600 {
+  color: rgb(226 232 240) !important;
+}
+
+.admin-panel.admin-dark .text-slate-500,
+.admin-panel.admin-dark .text-slate-400 {
+  color: rgb(148 163 184) !important;
+}
+
+.admin-panel.admin-dark input,
+.admin-panel.admin-dark textarea,
+.admin-panel.admin-dark select {
+  border-color: rgba(255,255,255,.14) !important;
+  background-color: rgba(0,0,0,.22) !important;
+  color: white !important;
+}
+
+.admin-panel.admin-light .rounded-lg.border,
+.admin-panel.admin-light .admin-table {
+  border-color: rgb(226 232 240);
+}
+
+.admin-panel.admin-light .bg-white,
+.admin-panel.admin-light .bg-slate-100,
+.admin-panel.admin-light .bg-slate-50,
+.admin-panel.admin-light .admin-table {
+  background-color: white !important;
+}
+
+.admin-panel.admin-light .bg-white\/\[\.025\],
+.admin-panel.admin-light .bg-white\/\[\.035\],
+.admin-panel.admin-light .bg-white\/5,
+.admin-panel.admin-light .bg-black\/20 {
+  background-color: white !important;
+}
+
+.admin-panel.admin-light .border-white\/10 {
+  border-color: rgb(226 232 240) !important;
+}
+
+.admin-panel.admin-light .text-white,
+.admin-panel.admin-light .text-slate-300,
+.admin-panel.admin-light .text-slate-400 {
+  color: rgb(51 65 85) !important;
+}
+
+.admin-panel.admin-light .text-slate-500 {
+  color: rgb(100 116 139) !important;
+}
+
+.admin-panel.admin-light input,
+.admin-panel.admin-light textarea,
+.admin-panel.admin-light select {
+  border-color: rgb(226 232 240) !important;
+  background-color: rgb(248 250 252) !important;
+  color: rgb(15 23 42) !important;
+}
+
+.admin-panel.admin-light table thead {
+  background-color: rgb(248 250 252) !important;
+}
