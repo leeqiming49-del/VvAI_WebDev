@@ -66,7 +66,7 @@ export function HeroGeometric({
   };
 
   return (
-    <section className="relative flex min-h-[620px] w-full items-center justify-center overflow-hidden bg-[#030303] md:min-h-[760px]">
+    <section className="relative flex min-h-[640px] w-full items-center justify-center overflow-hidden bg-[#030303] md:min-h-[760px]">
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.04] via-transparent to-cyan-500/[0.05] blur-2xl md:blur-3xl" />
       <div className="absolute inset-0 overflow-hidden">
         <ElegantShape delay={0.3} width={600} height={140} rotate={12} gradient="from-indigo-500/[0.18]" className="left-[-55%] top-[12%] sm:left-[-18%] md:left-[-5%] md:top-[20%]" />
@@ -75,13 +75,13 @@ export function HeroGeometric({
         <ElegantShape delay={0.6} width={200} height={60} rotate={20} gradient="from-amber-500/[0.12]" className="right-[-10%] top-[12%] hidden sm:right-[15%] md:right-[20%] md:block" />
         <ElegantShape delay={0.7} width={150} height={40} rotate={-25} gradient="from-cyan-500/[0.18]" className="left-[14%] top-[7%] hidden md:left-[25%] md:top-[10%] md:block" />
       </div>
-      <div className="relative z-10 mx-auto max-w-5xl px-5 py-24 text-center md:px-6">
+      <div className="relative z-10 mx-auto max-w-5xl px-6 py-24 text-center md:px-6">
         <motion.div custom={0} variants={fadeUpVariants} initial="hidden" animate="visible" className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 md:mb-12">
           <Circle className="h-2 w-2 fill-cyan text-cyan" />
           <span className="text-xs font-semibold tracking-[.16em] text-white/60">{badge}</span>
         </motion.div>
         <motion.div custom={1} variants={fadeUpVariants} initial="hidden" animate="visible">
-          <h1 className="text-4xl font-bold leading-[1.02] tracking-[-.06em] sm:text-6xl md:text-8xl lg:text-[104px]">
+          <h1 className="text-[2.65rem] font-bold leading-[1.04] tracking-[-.055em] sm:text-6xl md:text-8xl lg:text-[104px]">
             <span className="bg-gradient-to-b from-white to-white/75 bg-clip-text text-transparent">{title1}</span>
             <br />
             <span className="bg-gradient-to-r from-cyan via-white/90 to-violet bg-clip-text text-transparent">{title2}</span>
@@ -90,9 +90,9 @@ export function HeroGeometric({
         <motion.div custom={2} variants={fadeUpVariants} initial="hidden" animate="visible">
           <p className="mx-auto mt-6 max-w-2xl text-sm font-light leading-6 tracking-wide text-white/50 sm:text-base md:mt-7 md:text-lg md:leading-7">{description}</p>
         </motion.div>
-        <motion.div custom={3} variants={fadeUpVariants} initial="hidden" animate="visible" className="mt-9 flex flex-wrap justify-center gap-3">
-          <Button size="lg" asChild><Link href="/products">View Products <ArrowRight size={16} /></Link></Button>
-          <Button variant="outline" size="lg" asChild><Link href="/contact">Start a Project</Link></Button>
+        <motion.div custom={3} variants={fadeUpVariants} initial="hidden" animate="visible" className="mx-auto mt-9 grid max-w-sm gap-3 sm:flex sm:max-w-none sm:flex-wrap sm:justify-center">
+          <Button size="lg" className="min-h-12 w-full sm:w-auto" asChild><Link href="/products">View Products <ArrowRight size={16} /></Link></Button>
+          <Button variant="outline" size="lg" className="min-h-12 w-full sm:w-auto" asChild><Link href="/contact">Start a Project</Link></Button>
         </motion.div>
       </div>
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-[#030303]/80" />
