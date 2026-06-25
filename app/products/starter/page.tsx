@@ -104,7 +104,7 @@ function buildCategoryRows(categories: SalesCategory[], mode: CostMode): Categor
   });
 }
 
-function buildInsights(categories: SalesCategory[], expenses: ExpenseItem[], mode: CostMode): Insight[] {
+function buildInsights(categories: SalesCategory[], expenses: ExpenseItem[], mode: CostMode, businessRevenue: number): Insight[] {
   const rows = categories
     .map((category) => {
       const revenue = toNumber(category.revenue);
@@ -115,7 +115,7 @@ function buildInsights(categories: SalesCategory[], expenses: ExpenseItem[], mod
     })
     .filter((category) => category.revenue > 0 || category.cost > 0);
 
-  const totalRevenue = rows.reduce((sum, row) => sum + row.revenue, 0);
+  const totalRevenue = businessRevenue;
   const totalCost = rows.reduce((sum, row) => sum + row.cost, 0);
   const totalExpenses = expenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
   const grossProfit = totalRevenue - totalCost;
@@ -238,6 +238,7 @@ function DarkSelect({
 
 export default function StarterDashboardPage() {
   const [period, setPeriod] = useState("Monthly Revenue");
+  const [totalRevenue, setTotalRevenue] = useState("72000");
   const [costMode, setCostMode] = useState<CostMode>("rm");
   const [categories, setCategories] = useState<SalesCategory[]>(starterCategories);
   const [expenses, setExpenses] = useState<ExpenseItem[]>(starterExpenses);
@@ -260,16 +261,22 @@ export default function StarterDashboardPage() {
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
   const categoryRows = useMemo(() => buildCategoryRows(categories, costMode), [categories, costMode]);
+  const allocatedRevenue = useMemo(() => categoryRows.reduce((sum, category) => sum + category.revenueValue, 0), [categoryRows]);
+  const businessRevenue = toNumber(totalRevenue);
+  const remainingRevenue = businessRevenue - allocatedRevenue;
+  const allocationPercentage = businessRevenue > 0 ? (allocatedRevenue / businessRevenue) * 100 : 0;
+  const allocationComplete = businessRevenue > 0 && Math.abs(remainingRevenue) < 0.01;
 
   const totals = useMemo(() => {
-    const revenue = categoryRows.reduce((sum, category) => sum + category.revenueValue, 0);
+    const revenue = toNumber(totalRevenue);
     const cogs = categoryRows.reduce((sum, category) => sum + category.costValue, 0);
     const grossProfit = revenue - cogs;
+    const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
     const operatingExpenses = expenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
     const netProfit = grossProfit - operatingExpenses;
     const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
-    return { revenue, cogs, grossProfit, operatingExpenses, netProfit, profitMargin };
-  }, [categoryRows, expenses]);
+    return { revenue, cogs, grossProfit, grossMargin, operatingExpenses, netProfit, profitMargin };
+  }, [categoryRows, expenses, totalRevenue]);
 
   const breakdown = useMemo(() => {
     const activeRows = categoryRows.filter((category) => category.revenueValue > 0 || category.costValue > 0);
@@ -327,6 +334,12 @@ export default function StarterDashboardPage() {
     setValidationError("");
     setValidationWarning(null);
 
+    if (costMode === "percent" && allocationPercentage > 100) {
+      setValidationWarning({ message: "Sales allocation exceeds 100%." });
+      setCalculated(false);
+      return;
+    }
+
     if (costMode === "percent") {
       const negativeCategory = categories.find((category) => toNumber(category.cost) < 0);
       if (negativeCategory) {
@@ -357,7 +370,7 @@ export default function StarterDashboardPage() {
     setValidationError("");
     setValidationWarning(null);
     setCalculated(true);
-    setInsights(buildInsights(categories, expenses, costMode));
+    setInsights(buildInsights(categories, expenses, costMode, totals.revenue));
     setShowAllInsights(false);
     setShowDetails(false);
     setFeedbackSaved(false);
@@ -368,6 +381,7 @@ export default function StarterDashboardPage() {
     ["Revenue", totals.revenue, totals.revenue > 0 ? "Healthy" : "Needs Attention", CircleDollarSign],
     ["Gross Profit", totals.grossProfit, statusFor(totals.grossProfit, "profit"), TrendingUp],
     ["Net Profit", totals.netProfit, statusFor(totals.netProfit, "profit"), BarChart3],
+    ["Gross Margin", totals.grossMargin, statusFor(totals.grossMargin, "margin"), TrendingUp],
     ["Profit Margin", totals.profitMargin, statusFor(totals.profitMargin, "margin"), Sparkles],
     ["COGS / Cost", totals.cogs, statusFor(totals.revenue > 0 ? (totals.cogs / totals.revenue) * 100 : 0, "cost"), WalletCards],
     ["Operating Expenses", totals.operatingExpenses, statusFor(totals.revenue > 0 ? (totals.operatingExpenses / totals.revenue) * 100 : 0, "expense"), ReceiptText],
@@ -379,7 +393,7 @@ export default function StarterDashboardPage() {
     ["Expenses vs Target", totals.operatingExpenses, toNumber(budgetOperatingExpenses)],
   ] as const;
 
-  const visibleInsights = showAllInsights ? insights : insights.slice(0, 2);
+  const visibleInsights = showAllInsights ? insights : insights.slice(0, 3);
 
   return <VvaiProductShell>
     <section className={`min-h-screen bg-[#030303] px-4 py-6 text-white sm:px-5 md:py-10 lg:px-8 ${!calculated ? "pb-28 md:pb-12" : ""}`}>
@@ -431,6 +445,28 @@ export default function StarterDashboardPage() {
           </div>
 
           <Card className="p-4 md:p-5">
+            <div className="flex items-center gap-2">
+              <CircleDollarSign size={18} className="text-cyan" />
+              <div>
+                <h3 className="font-semibold">Business Revenue</h3>
+                <p className="mt-1 text-xs text-slate-500">Enter the main revenue figure for the selected period.</p>
+              </div>
+            </div>
+            <label className="mt-4 grid gap-2 text-xs font-semibold text-slate-400">
+              Total Revenue
+              <Input
+                className={numberInputClass}
+                type="number"
+                min="0"
+                step="0.01"
+                value={totalRevenue}
+                onChange={(event) => setTotalRevenue(event.target.value)}
+                placeholder="Total Revenue"
+              />
+            </label>
+          </Card>
+
+          <Card className="p-4 md:p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2"><ListTree size={17} className="text-cyan" /><h3 className="font-semibold">Sales &amp; Cost Breakdown</h3></div>
@@ -460,12 +496,31 @@ export default function StarterDashboardPage() {
                 <button type="button" aria-label="Delete category" onClick={() => setCategories((items) => items.filter((item) => item.id !== category.id))} className="hidden h-12 w-10 place-items-center rounded-lg border border-white/[.08] text-slate-500 transition hover:border-rose-400/40 hover:text-rose-300 md:grid"><Trash2 size={15} /></button>
               </div>)}
             </div>
+            <div className={`mt-4 rounded-xl border p-3 ${allocationComplete ? "border-emerald-300/20 bg-emerald-300/[.07]" : "border-amber-300/20 bg-amber-300/[.06]"}`}>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Allocated Revenue</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{formatCurrency(allocatedRevenue)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Remaining Revenue</p>
+                  <p className={`mt-1 text-sm font-semibold ${remainingRevenue < 0 ? "text-rose-300" : "text-white"}`}>{formatCurrency(remainingRevenue)}</p>
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Sales Allocation</p>
+                  <p className={`mt-1 text-sm font-semibold ${allocationPercentage > 100 ? "text-rose-300" : "text-cyan"}`}>{pct(allocationPercentage)}</p>
+                </div>
+              </div>
+              <p className={`mt-3 text-xs font-semibold ${allocationComplete ? "text-emerald-300" : "text-amber-200"}`}>
+                {allocationComplete ? "Revenue allocation complete" : "Remaining revenue has not been allocated."}
+              </p>
+            </div>
             {validationError && <p className="mt-4 rounded-lg border border-rose-400/25 bg-rose-500/10 p-3 text-sm leading-6 text-rose-200">{validationError}</p>}
             {validationWarning && <div className="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100">
               <p className="font-semibold">{validationWarning.message}</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <Button type="button" size="sm" onClick={continueAnalysis}>Continue Anyway</Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => setValidationWarning(null)}>Edit Inputs</Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setValidationWarning(null)}>Edit</Button>
+                <Button type="button" size="sm" onClick={continueAnalysis}>Continue</Button>
               </div>
             </div>}
           </Card>
@@ -510,7 +565,7 @@ export default function StarterDashboardPage() {
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             {kpis.map(([label, value, status, Icon]) => {
-              const isMargin = label === "Profit Margin";
+              const isMargin = label === "Gross Margin" || label === "Profit Margin";
               return <div key={label} className="min-h-36 rounded-2xl border border-cyan/[.13] bg-[linear-gradient(145deg,rgba(77,244,255,.055),rgba(255,255,255,.018))] p-4 shadow-[0_16px_45px_rgba(0,0,0,.22)]">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">{label}</p>
@@ -521,6 +576,18 @@ export default function StarterDashboardPage() {
               </div>;
             })}
           </div>
+
+          <Card className="p-4">
+            <div className="flex items-center gap-2"><ListTree size={17} className="text-cyan" /><h3 className="font-semibold">Analysis Summary</h3></div>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[
+                ["Largest Revenue Category", breakdown.topRevenue ? `${breakdown.topRevenue.name} - ${formatCurrency(breakdown.topRevenue.revenueValue)}` : "Not enough data"],
+                ["Highest Margin Category", breakdown.highestMargin ? `${breakdown.highestMargin.name} - ${pct(breakdown.highestMargin.margin)}` : "Not enough data"],
+                ["Largest Expense", breakdown.largestExpense ? `${breakdown.largestExpense.name} - ${formatCurrency(toNumber(breakdown.largestExpense.amount))}` : "Not enough data"],
+                ["Budget Variance", budgetEnabled ? formatCurrency(totals.revenue - toNumber(budgetRevenue)) : "Not enabled"],
+              ].map(([label, value]) => <div key={label} className="rounded-xl border border-white/[.07] bg-black/20 p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xs font-semibold leading-5 text-white">{value}</p></div>)}
+            </div>
+          </Card>
 
           <Button variant="outline" className="w-full" onClick={() => setShowDetails((value) => !value)}>
             {showDetails ? "Hide Detailed Breakdown" : "View Detailed Breakdown"}
@@ -533,6 +600,7 @@ export default function StarterDashboardPage() {
               <div className="text-sm">
                 <div className="flex items-center justify-between gap-4 px-4 py-3 font-semibold"><span>Revenue</span><span>{formatCurrency(totals.revenue)}</span></div>
                 {categoryRows.map((row) => <div key={`revenue-${row.id}`} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-2 text-slate-400"><span className="pl-3">{row.name} revenue</span><span>{formatCurrency(row.revenueValue)}</span></div>)}
+                {!allocationComplete && <div className="grid grid-cols-[1fr_auto] gap-3 px-4 py-2 text-amber-200"><span className="pl-3">Remaining revenue</span><span>{formatCurrency(remainingRevenue)}</span></div>}
                 <div className="mt-2 border-t border-white/[.07] px-4 pt-2">
                   {categoryRows.map((row) => <div key={`cost-${row.id}`} className="grid grid-cols-[1fr_auto] gap-3 py-2 text-slate-400"><span className="pl-3">{row.name} cost</span><span>{formatCurrency(row.costValue)}</span></div>)}
                 </div>
@@ -550,10 +618,10 @@ export default function StarterDashboardPage() {
               <div className="flex items-center gap-2"><ListTree size={17} className="text-cyan" /><h3 className="font-semibold">Category Summary</h3></div>
               <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
-                  ["Top Revenue", breakdown.topRevenue ? `${breakdown.topRevenue.name} · ${formatCurrency(breakdown.topRevenue.revenueValue)}` : "Not enough data"],
-                  ["Highest Margin", breakdown.highestMargin ? `${breakdown.highestMargin.name} · ${pct(breakdown.highestMargin.margin)}` : "Not enough data"],
-                  ["Largest Cost", breakdown.largestCost ? `${breakdown.largestCost.name} · ${formatCurrency(breakdown.largestCost.costValue)}` : "Not enough data"],
-                  ["Largest Expense", breakdown.largestExpense ? `${breakdown.largestExpense.name} · ${formatCurrency(toNumber(breakdown.largestExpense.amount))}` : "Not enough data"],
+                  ["Top Revenue", breakdown.topRevenue ? `${breakdown.topRevenue.name} - ${formatCurrency(breakdown.topRevenue.revenueValue)}` : "Not enough data"],
+                  ["Highest Margin", breakdown.highestMargin ? `${breakdown.highestMargin.name} - ${pct(breakdown.highestMargin.margin)}` : "Not enough data"],
+                  ["Largest Cost", breakdown.largestCost ? `${breakdown.largestCost.name} - ${formatCurrency(breakdown.largestCost.costValue)}` : "Not enough data"],
+                  ["Largest Expense", breakdown.largestExpense ? `${breakdown.largestExpense.name} - ${formatCurrency(toNumber(breakdown.largestExpense.amount))}` : "Not enough data"],
                 ].map(([label, value]) => <div key={label} className="rounded-xl border border-white/[.07] bg-black/20 p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xs font-semibold leading-5 text-white">{value}</p></div>)}
               </div>
             </Card>
@@ -567,7 +635,7 @@ export default function StarterDashboardPage() {
                     <p className="font-semibold text-white">{label}</p>
                     <div className="mt-2 flex justify-between"><span>Actual</span><span>{formatCurrency(actual)}</span></div>
                     <div className="flex justify-between"><span>Target</span><span>{formatCurrency(budget)}</span></div>
-                    <div className="mt-1 flex justify-between border-t border-white/[.06] pt-1 text-cyan"><span>Variance</span><span>{formatCurrency(variance)} · {variancePercent(actual, budget)}</span></div>
+                    <div className="mt-1 flex justify-between border-t border-white/[.06] pt-1 text-cyan"><span>Variance</span><span>{formatCurrency(variance)} - {variancePercent(actual, budget)}</span></div>
                   </div>;
                 })}
               </div>
@@ -586,7 +654,7 @@ export default function StarterDashboardPage() {
                 <p className="mt-3 border-l-2 border-cyan/40 pl-3 text-cyan">{insight.action}</p>
               </div>)}
             </div>
-            {insights.length > 2 && <Button className="mt-3 w-full" variant="ghost" onClick={() => setShowAllInsights((value) => !value)}>{showAllInsights ? "Hide Extra Insights" : "Show More Insights"}</Button>}
+            {insights.length > 3 && <Button className="mt-3 w-full" variant="ghost" onClick={() => setShowAllInsights((value) => !value)}>{showAllInsights ? "Hide Extra Insights" : "Show More Insights"}</Button>}
           </Card>
 
           <Card className="p-4 md:p-5">
